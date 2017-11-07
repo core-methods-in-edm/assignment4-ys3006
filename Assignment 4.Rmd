@@ -1,0 +1,92 @@
+---
+title: "Assignment 4"
+author: "ys3006"
+date: "November 2, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r Part I}
+D1 <- read.csv("Assistments-confidence.csv")[,-1]
+library(corrplot)
+COR <- cor(D1)
+head(COR)
+corrplot(COR, order="AOE", method="circle", tl.pos="lt", type="upper", tl.col="black", tl.cex=0.6, tl.srt=45, addCoef.col="black", addCoefasPercent = TRUE, sig.level = 0.50, insig="blank")
+
+D2 <- D1[,-4]
+D2 <- scale(D2, center=TRUE)
+
+pca <- prcomp(D2, scale=TRUE)
+pca$sdev^2
+summary(pca)
+
+plot(pca, type="lines")
+
+# there is an "elbow points" at component 2, might just keep the first component
+# in terms of the eigenvalues, first three are more than 1, might keep the fist three components as well
+```
+
+```{r Part II}
+#Now, create a data frame of the transformed data from your pca
+D3 <- as.data.frame(pca$x)
+#Attach the variable "mean_correct" from your original data frame to D3.
+D4 <- cbind(D3, as.data.frame(D1$mean_correct))
+# Now re-run your scatterplots and correlations between the transformed data and mean_correct. 
+plot(D4)
+
+# plot all 6 components first
+COR2 <- cor(D4)
+corrplot(COR2, order="AOE", method="circle", tl.pos="lt", type="upper", tl.col="black", tl.cex=0.6, tl.srt=45, addCoef.col="black", addCoefasPercent = TRUE, sig.level = 0.50, insig="blank")
+
+# If you had dropped some components would you have lost important infomation about mean_correct?
+# keep only the first three components I chose from Part I
+D3_2 <- as.data.frame(pca$x[,1:3])
+D4_2 <- cbind(D3_2, as.data.frame(D1$mean_correct))
+COR2_2 <- cor(D4_2)
+corrplot(COR2_2, order="AOE", method="circle", tl.pos="lt", type="upper", tl.col="black", tl.cex=0.6, tl.srt=45, addCoef.col="black", addCoefasPercent = TRUE, sig.level = 0.50, insig="blank")
+
+# it seems there is a strong negative correlation between PC 6 and mean_correct, while regarding as PCA results, PC 6 is the least important component that should be left out. However, this way, we would lose the information of the correlation between PC 6 and mean_correct. Might keep the first three components with PC 6.
+
+# Now print out the eigenvectors (often called loadings) for the components you generated:
+pca$rotation
+# Examine the eigenvectors, notice that they are a little difficult to interpret. 
+# It is much easier to make sense of them if we make them proportional within each component
+loadings <- abs(pca$rotation)
+View(loadings)
+sweep(loadings, 2, colSums(loadings),"/")
+# (There must be a way to do this with dplyr()?)
+
+#Now examine your components and try to come up with substantive descriptions of what some might represent?
+
+#You can generate a biplot to help you, though these can be a bit confusing. They plot the transformed data by the first two components. Therefore, the axes represent the direction of maximum variance. Then mapped onto this point cloud are the original directions of the variables, depicted as red arrows. It is supposed to provide a visualization of which variables "go together". Variables that possibly represent the same underlying construct point in the same direction.  
+biplot(pca)
+
+#Calculate values for each student that represent these your composite variables and then create a new correlogram showing their relationship to mean_correct.
+library("psych")
+PC <- principal(D2, 6, scores=TRUE)$scores
+D4 <- cbind(PC, as.data.frame(D1$mean_correct))
+COR3 <- cor(D4)
+corrplot(COR3, order="AOE", method="circle", tl.pos="lt", type="upper", tl.col="black", tl.cex=0.6, tl.srt=45, addCoef.col="black", addCoefasPercent = TRUE, sig.level=0.50, insig = "blank")
+```
+
+```{r Part III}
+K1 <- read.csv("humor_data.csv")
+K2 <- K1[,1:32]
+
+library(corrplot)
+COR4 <- cor(K2)
+corrplot(COR4, order="AOE", method="circle", tl.pos="lt", type="upper", tl.col="black", tl.cex=0.6, tl.srt=45, addCoefasPercent = FALSE, sig.level=0.50, insig = "blank")
+
+K3 <- scale(K2, center=TRUE)
+pca2 <- prcomp(K3, scale=TRUE)
+
+pca2$sdev^2
+summary(pca2)
+plot(pca2, type="lines")
+
+# from the scree plot, there is a drastic deceasing at pc2, but it holds over 100% variance up to pc 6. Given that there is 32 variables together, might keep the first 6 components in this case.
+```
+
